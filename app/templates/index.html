@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriEdge Smart Farm</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <p class="eyebrow">Edge AI &middot; Tomato Leaf Screening</p>
+      <h1>AgriEdge Smart Farm</h1>
+    </header>
+
+    {% if error %}
+    <div class="banner banner-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <section class="card">
+      <h2>Capture a Leaf</h2>
+      <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" class="capture-form">
+        <input type="file" name="image" accept="image/*" capture="environment" required />
+        <button type="submit">Analyze Leaf</button>
+      </form>
+      <p class="hint">Works from your phone's browser &mdash; no app needed.</p>
+    </section>
+
+    <section class="card result-card">
+      <h2>Latest Result</h2>
+
+      <p id="result-empty" class="empty-state">Waiting for the first capture&hellip;</p>
+
+      <div id="result-content" class="result-body hidden">
+        <img id="result-image" class="result-image" alt="Captured tomato leaf" />
+
+        <div class="result-data">
+          <span id="status-badge" class="badge">&mdash;</span>
+
+          <div class="meter" aria-hidden="true">
+            <div id="meter-fill" class="meter-fill"></div>
+          </div>
+
+          <dl class="result-grid">
+            <div class="result-row">
+              <dt>Crop</dt><dd id="result-crop">&mdash;</dd>
+            </div>
+            <div class="result-row">
+              <dt>Prediction</dt><dd id="result-prediction">&mdash;</dd>
+            </div>
+            <div class="result-row">
+              <dt>Confidence</dt><dd id="result-confidence">&mdash;</dd>
+            </div>
+            <div class="result-row result-row-wide">
+              <dt>Recommendation</dt><dd id="result-recommendation">&mdash;</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

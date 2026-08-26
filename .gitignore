@@ -1,0 +1,33 @@
+# --- Python -----------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+
+# --- Virtual environments ----------------------------------------------
+venv/
+.venv/
+env/
+
+# --- Datasets (large - never commit) ------------------------------------
+ai/training/PlantVillage-Dataset/
+ai/training/data/
+*.zip
+*.tar.gz
+
+# --- Runtime uploads from the phone/laptop demo --------------------------
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# --- OS files ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# --- Secrets ---------------------------------------------------------------
+.env
+kaggle.json
+*.pem
+
+# NOTE: ai/models/*.tflite and model_metadata.json are intentionally NOT
+# ignored -- the trained model is a real deliverable that belongs in git.

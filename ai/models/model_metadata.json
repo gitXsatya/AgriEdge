@@ -1,0 +1,18 @@
+{
+  "model_version": "v1",
+  "crop": "Tomato",
+  "class_names": [
+    "Healthy",
+    "Early Blight",
+    "Late Blight"
+  ],
+  "input_size": [
+    224,
+    224
+  ],
+  "created_utc": "2026-08-26T00:32:52.410502Z",
+  "test_accuracy": 0.9644,
+  "test_set_size": 675,
+  "confidence_threshold": 0.8,
+  "notes": "MobileNetV2 transfer learning, PlantVillage tomato subset, dynamic-range quantized TFLite export."
+}
