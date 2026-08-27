@@ -1,17 +1,9 @@
 """
-AgriEdge - Local Flask server (phone -> laptop bridge).
+AgriEdge - Local Flask server
 
-Run:
-    python app/app.py
-Then open http://<laptop-ip>:5000 from a phone on the same Wi-Fi network.
-
-Design note: the phone uploads via a normal form POST to /upload, which
-redirects back to "/". Both the phone (right after its own upload) and
-the laptop (which may have "/" open already, watching) pick up the
-result the same way: a small JS poll against /api/latest every few
-seconds. That's what makes "laptop displays the captured image" work
-without needing websockets -- deliberately simple for a hackathon demo.
+Phone -> Flask -> AI -> Decision Engine -> Dashboard
 """
+
 import sys
 import time
 import uuid
@@ -19,80 +11,258 @@ from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
+from decision_engine import generate_recommendation
+
+
+# ============================================================
+# PROJECT PATHS
+# ============================================================
+
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = APP_DIR.parent
+
 UPLOAD_DIR = APP_DIR / "static" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+
+# ============================================================
+# AI IMPORTS
+# ============================================================
+
 sys.path.insert(0, str(PROJECT_ROOT / "ai" / "inference"))
-import config  # noqa: E402
-from predict import predict_image, ModelNotFoundError, InferenceError  # noqa: E402
+
+import config
+from predict import predict_image, ModelNotFoundError, InferenceError
+
+
+# ============================================================
+# FLASK APP
+# ============================================================
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
-# In-memory "latest result" -- intentionally simple for a hackathon demo:
-# one active capture at a time, no database. Good enough for a live demo;
-# not meant to survive a server restart or handle concurrent demos.
-latest_result = {"has_result": False}
+
+# ============================================================
+# ALLOWED IMAGE TYPES
+# ============================================================
+
+ALLOWED_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".webp"
+}
+
+
+# ============================================================
+# LATEST RESULT
+# ============================================================
+
+latest_result = {
+    "has_result": False
+}
 
 
 def set_latest_result(**fields):
-    latest_result.clear()
-    latest_result.update(has_result=True, timestamp=time.time(), **fields)
 
+    latest_result.clear()
+
+    latest_result.update(
+        has_result=True,
+        timestamp=time.time(),
+        **fields
+    )
+
+
+# ============================================================
+# HOME PAGE
+# ============================================================
 
 @app.route("/")
 def index():
-    return render_template("index.html", crop=config.CROP_NAME)
 
+    return render_template(
+        "index.html",
+        crop=config.CROP_NAME
+    )
+
+
+# ============================================================
+# IMAGE UPLOAD
+# ============================================================
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    file = request.files.get("image")
-    if file is None or file.filename == "":
-        return render_template("index.html", crop=config.CROP_NAME, error="No image selected."), 400
 
-    ext = Path(file.filename).suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
+    # --------------------------------------------------------
+    # GET IMAGE
+    # --------------------------------------------------------
+
+    file = request.files.get("image")
+
+    if file is None or file.filename == "":
+
         return render_template(
-            "index.html", crop=config.CROP_NAME, error=f"Unsupported file type '{ext}'."
+            "index.html",
+            crop=config.CROP_NAME,
+            error="No image selected."
         ), 400
 
+
+    # --------------------------------------------------------
+    # CHECK FILE TYPE
+    # --------------------------------------------------------
+
+    ext = Path(file.filename).suffix.lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+
+        return render_template(
+            "index.html",
+            crop=config.CROP_NAME,
+            error=f"Unsupported file type '{ext}'."
+        ), 400
+
+
+    # --------------------------------------------------------
+    # SAVE IMAGE
+    # --------------------------------------------------------
+
     filename = f"{uuid.uuid4().hex}{ext}"
+
     save_path = UPLOAD_DIR / filename
+
     file.save(save_path)
-    image_url = url_for("static", filename=f"uploads/{filename}")
+
+    image_url = url_for(
+        "static",
+        filename=f"uploads/{filename}"
+    )
+
+
+    # ========================================================
+    # PERSON 1 - AI PREDICTION
+    # ========================================================
 
     try:
+
         result = predict_image(str(save_path))
+
     except (ModelNotFoundError, InferenceError) as exc:
+
         set_latest_result(
-            image_url=image_url, crop=config.CROP_NAME, prediction=None,
-            confidence=None, status=config.STATUS_ERROR, recommendation=None,
-            error=str(exc),
+            image_url=image_url,
+            crop=config.CROP_NAME,
+            prediction=None,
+            confidence=None,
+            status=config.STATUS_ERROR,
+            recommendation=None,
+            error=str(exc)
         )
+
         return redirect(url_for("index"))
 
-    set_latest_result(image_url=image_url, **result)
-    return redirect(url_for("index"))
 
+    # ========================================================
+    # PERSON 2 - DEMO SENSOR VALUES
+    # ========================================================
+    #
+    # Person 2 has not connected the real sensors yet.
+    #
+    # These are temporary values for our prototype.
+    #
+    # Later:
+    #
+    # temperature    -> real sensor
+    # soil_moisture  -> real sensor
+    # humidity       -> real sensor
+    #
+    # ========================================================
+
+    temperature = 34
+
+    soil_moisture = 27
+
+    humidity = 48
+
+
+    # ========================================================
+    # PERSON 3 - DECISION ENGINE
+    # ========================================================
+
+    recommendation = generate_recommendation(
+
+        temperature=temperature,
+
+        soil_moisture=soil_moisture,
+
+        humidity=humidity,
+
+        disease_status=result.get("status"),
+
+        disease_confidence=result.get("confidence"),
+
+        disease_prediction=result.get("prediction")
+    )
+
+
+     # ========================================================
+    # SEND EVERYTHING TO DASHBOARD
+    # ========================================================
+
+    result_without_recommendation = {
+        key: value
+        for key, value in result.items()
+        if key != "recommendation"
+    }
+
+    set_latest_result(
+        image_url=image_url,
+        temperature=temperature,
+        soil_moisture=soil_moisture,
+        humidity=humidity,
+        recommendation=recommendation,
+        **result_without_recommendation
+    )
+
+    return redirect(url_for("index"))
+# ============================================================
+# API - LATEST RESULT
+# ============================================================
 
 @app.route("/api/latest")
 def api_latest():
-    """Clean JSON for the dashboard poller AND for Person 3's integration."""
+
     return jsonify(latest_result)
 
 
+# ============================================================
+# FILE TOO LARGE
+# ============================================================
+
 @app.errorhandler(413)
 def too_large(_exc):
-    return jsonify({"status": config.STATUS_ERROR, "error": "Image too large (max 10MB)."}), 413
 
+    return jsonify({
+
+        "status": config.STATUS_ERROR,
+
+        "error": "Image too large (max 10MB)."
+
+    }), 413
+
+
+# ============================================================
+# START SERVER
+# ============================================================
 
 if __name__ == "__main__":
-    # debug=True is convenient for a hackathon demo (auto-reload, clear
-    # error pages). Turn it off if this is ever exposed beyond a trusted
-    # local Wi-Fi network.
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )

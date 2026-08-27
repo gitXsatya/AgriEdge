@@ -1,63 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgriEdge Smart Farm</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
   <div class="app">
+
     <header class="app-header">
-      <p class="eyebrow">Edge AI &middot; Tomato Leaf Screening</p>
-      <h1>AgriEdge Smart Farm</h1>
+      <div class="header-top">
+        <div>
+          <p class="eyebrow">Edge AI &middot; Smart Farming</p>
+
+          <h1 data-i18n="title">AgriEdge Smart Farm</h1>
+
+          <p class="subtitle" data-i18n="subtitle">
+            AI-powered crop monitoring and farmer assistance
+          </p>
+        </div>
+
+        <div class="language-selector">
+          <label for="language-select" data-i18n="language">
+            Language
+          </label>
+
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="or">ଓଡ଼ିଆ</option>
+            <option value="bn">বাংলা</option>
+          </select>
+        </div>
+      </div>
     </header>
 
     {% if error %}
-    <div class="banner banner-error" role="alert">{{ error }}</div>
+      <div class="banner banner-error" role="alert">
+        {{ error }}
+      </div>
     {% endif %}
 
-    <section class="card">
-      <h2>Capture a Leaf</h2>
-      <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" class="capture-form">
-        <input type="file" name="image" accept="image/*" capture="environment" required />
-        <button type="submit">Analyze Leaf</button>
+    <section class="card capture-card">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">01</p>
+          <h2 data-i18n="captureTitle">Capture a Leaf</h2>
+        </div>
+      </div>
+
+      <form
+        action="{{ url_for('upload') }}"
+        method="post"
+        enctype="multipart/form-data"
+        class="capture-form"
+      >
+        <label
+          for="leaf-image"
+          class="file-label"
+          data-i18n="chooseImage"
+        >
+          📷 Choose or capture a leaf image
+        </label>
+
+        <input
+          id="leaf-image"
+          type="file"
+          name="image"
+          accept="image/*"
+          capture="environment"
+          required
+        >
+
+        <button
+          type="submit"
+          class="primary-button"
+          data-i18n="analyze"
+        >
+          Analyze Leaf
+        </button>
       </form>
-      <p class="hint">Works from your phone's browser &mdash; no app needed.</p>
+
+      <p class="hint" data-i18n="captureHint">
+        Take a clear photo of a tomato leaf for AI analysis.
+      </p>
+    </section>
+
+    <section class="card environment-card">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">02</p>
+          <h2 data-i18n="environment">Farm Environment</h2>
+        </div>
+
+        <span class="live-indicator">● LIVE</span>
+      </div>
+
+      <div class="sensor-grid">
+        <div class="sensor-card">
+          <div class="sensor-icon">🌡️</div>
+
+          <div class="sensor-info">
+            <span class="sensor-label" data-i18n="temperature">
+              Temperature
+            </span>
+
+            <strong id="temperature-value">--</strong>
+            <span class="sensor-unit">°C</span>
+          </div>
+        </div>
+
+        <div class="sensor-card">
+          <div class="sensor-icon">💧</div>
+
+          <div class="sensor-info">
+            <span class="sensor-label" data-i18n="soilMoisture">
+              Soil Moisture
+            </span>
+
+            <strong id="soil-moisture-value">--</strong>
+            <span class="sensor-unit">%</span>
+          </div>
+        </div>
+
+        <div class="sensor-card">
+          <div class="sensor-icon">💨</div>
+
+          <div class="sensor-info">
+            <span class="sensor-label" data-i18n="humidity">
+              Humidity
+            </span>
+
+            <strong id="humidity-value">--</strong>
+            <span class="sensor-unit">%</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="card result-card">
-      <h2>Latest Result</h2>
+      <div class="section-heading">
+        <div>
+          <p class="section-label">03</p>
+          <h2 data-i18n="cropHealth">Crop Health</h2>
+        </div>
+      </div>
 
-      <p id="result-empty" class="empty-state">Waiting for the first capture&hellip;</p>
+      <p
+        id="result-empty"
+        class="empty-state"
+        data-i18n="waiting"
+      >
+        Waiting for the first capture...
+      </p>
 
       <div id="result-content" class="result-body hidden">
-        <img id="result-image" class="result-image" alt="Captured tomato leaf" />
+        <div class="image-container">
+          <img
+            id="result-image"
+            class="result-image"
+            alt="Captured tomato leaf"
+          >
+        </div>
 
         <div class="result-data">
-          <span id="status-badge" class="badge">&mdash;</span>
+          <span id="status-badge" class="badge">—</span>
 
-          <div class="meter" aria-hidden="true">
-            <div id="meter-fill" class="meter-fill"></div>
+          <div class="confidence-section">
+            <div class="confidence-header">
+              <span data-i18n="confidence">Confidence</span>
+              <strong id="result-confidence">—</strong>
+            </div>
+
+            <div class="meter" aria-hidden="true">
+              <div id="meter-fill" class="meter-fill"></div>
+            </div>
           </div>
 
           <dl class="result-grid">
             <div class="result-row">
-              <dt>Crop</dt><dd id="result-crop">&mdash;</dd>
+              <dt data-i18n="crop">Crop</dt>
+              <dd id="result-crop">—</dd>
             </div>
+
             <div class="result-row">
-              <dt>Prediction</dt><dd id="result-prediction">&mdash;</dd>
-            </div>
-            <div class="result-row">
-              <dt>Confidence</dt><dd id="result-confidence">&mdash;</dd>
-            </div>
-            <div class="result-row result-row-wide">
-              <dt>Recommendation</dt><dd id="result-recommendation">&mdash;</dd>
+              <dt data-i18n="prediction">Disease</dt>
+              <dd id="result-prediction">—</dd>
             </div>
           </dl>
         </div>
       </div>
     </section>
+
+    <section class="card recommendation-card">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">04</p>
+          <h2 data-i18n="farmerAction">Farmer Action</h2>
+        </div>
+      </div>
+
+      <div
+        id="recommendation-content"
+        class="recommendation-content"
+      >
+        <div class="recommendation-icon">💡</div>
+
+        <div>
+          <h3 data-i18n="recommendation">Recommendation</h3>
+
+          <p
+            id="result-recommendation"
+            data-i18n="waitingRecommendation"
+          >
+            Waiting for crop analysis.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <span>AgriEdge</span>
+      <span>AI + Sensors + Smart Decisions</span>
+    </footer>
+
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
