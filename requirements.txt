@@ -1,19 +1,4 @@
-# AgriEdge - Person 1 (Edge AI) dependencies
-# Training itself runs in Google Colab (which already has most of this
-# preinstalled); this file is for your LAPTOP, to run the Flask app and
-# local TFLite inference.
+# AgriEdge - Requirements
 
-flask>=3.0
-numpy>=1.26
-pillow>=10.0
-
-# Full TensorFlow is the safe, cross-platform choice for running the
-# .tflite model locally via tf.lite.Interpreter. If you want a lighter
-# footprint later and your platform has a wheel for it, you can swap
-# this for `tflite-runtime` instead -- predict.py already tries
-# tflite-runtime first and falls back to tensorflow automatically.
-tensorflow>=2.15
-
-# Only needed if you re-run evaluation/plots locally instead of in Colab
-scikit-learn>=1.3
-matplotlib>=3.8
+pytest>=7.0.0
+pyserial>=3.5
